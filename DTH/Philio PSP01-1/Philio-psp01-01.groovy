@@ -21,7 +21,6 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-        // zw:S type:2001 mfr:013C prod:0002 model:0002 ver:1.00 zwv:3.41 lib:06 cc:80,85,70,72,86,30,31,84 ccOut:20
         fingerprint deviceId: "0x2001", inClusters: "0x30,0x31,0x70,0x72,0x80,0x84,0x85,0x86", outClusters: "0x20"
         fingerprint mfr:"013C", prod:"0002", model:"0002"
 	}
@@ -201,7 +200,7 @@ def parse(String description)
 	def cmd = zwave.parse(description, [0x30: 2, 0x31: 5, 0x70: 1, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1])
 	//log.debug "Parsed CMD: ${cmd.toString()}"
 	if (cmd) {
-		if( cmd.CMD == "8407" ) { result << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) }
+		if( cmd.CMD == "8407" ) { result << new physicalgraph.device.HubAction(zwave.wakeUpV2.wakeUpNoMoreInformation().format()) }
 		def evt = zwaveEvent(cmd)
 		//log.debug "EVT: ${evt.toString()}"
 		result << createEvent(evt)
