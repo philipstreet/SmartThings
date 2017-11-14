@@ -58,18 +58,22 @@ metadata {
 		details(["motion", "temperature", "illuminance", "battery", "configure"])
 	}
 
-	preferences {
-	// 	// input name: "param2", type: "number", range: "1..100", required: true, description: "Parameter 2 Description", 
-	// 	// 	title: "Setting the BASIC command value to turn on the light.\n"+
-	// 	// 		"The 0xFF(-1) means turn on the light.\n"+
-	// 	// 		"For dimmer equipment 1 to 100 means the light strength.\n"+
-	// 	// 		"Default value:?"
+	// preferences {
+	// 	input (
+	// 		name: "param2", 
+	// 		type: "number", 
+	// 		range: "1..100",
+	// 		description: "Parameter 2 Description", 
+	// 		title: "Setting the BASIC command value to turn on the light.\n"+
+	// 			"The 0xFF(-1) means turn on the light.\n"+
+	// 			"For dimmer equipment 1 to 100 means the light strength.\n"+
+	// 			"Default value:?"
+	// 	)
 
 	// 	input (
 	// 		name: "param3", 
 	// 		type: "number", 
 	// 		range: "0..99", 
-	// 		required: true,
 	// 		title: "PIR sensitivity settings\n",
 	// 		description: "0 means disable the PIR motion.\n"+
 	// 			"1 means the lowest sensitivity, 99 means the highest sensitivity.\n"+
@@ -81,7 +85,6 @@ metadata {
 	// 		name: "param4", 
 	// 		type: "number", 
 	// 		range: "0..100", 
-	// 		required: true,
 	// 		title: "Setting the illumination threshold to turn on the light.\n",
 	// 		description: "When the event triggered and the environment illumination lower then the threshold, the device will turn on the light.\n"+
 	// 			"0 means turn off illumination detected function. And never turn on the light.\n"+
@@ -97,7 +100,6 @@ metadata {
 	// 		name: "param5", 
 	// 		type: "number", 
 	// 		range: "0..127", 
-	// 		required: true,
 	// 		title: "Operation mode.\n",
 	// 		description: "Using bit to control.\n"+
 	// 			"Bit0: 1 means security mode, 0 means home automation mode.\n"+
@@ -110,7 +112,6 @@ metadata {
 	// 		name: "param6", 
 	// 		type: "number", 
 	// 		range: "0.127", 
-	// 		required: true,
 	// 		title: "Multi-Sensor function switch.\n",
 	// 		description: "Using bit to control.\n"+
 	// 			"Bit0: Reserved, always 1.\n"+
@@ -128,7 +129,6 @@ metadata {
 	// 		name: "param8", 
 	// 		type: "number", 
 	// 		range: "3..127", 
-	// 		required: true,
 	// 		title: "PIR Re-Detect Interval Time\n",
 	// 		description: "In the security mode, after the PIR motion detected, setting the re-detect time. 8 seconds per tick, and minimum time is 24 seconds, default tick is 3 (24 seconds).\n"+
 	// 			"Setting the suitable value to prevent received the trigger signal too frequency. Also can save the battery energy.\n"+
@@ -140,7 +140,6 @@ metadata {
 	// 		name: "param9", 
 	// 		type: "number", 
 	// 		range: "4..127", 
-	// 		required: true,
 	// 		title: "Turn Off Light Time\n",
 	// 		description: "After turn on the light, setting the delay time to turn off the light when the PIR motion is not detected. 8 seconds per tick, and minimum time is 32 seconds, default tick is 4 (32 seconds).\n"+
 	// 			"Default value: 4"
@@ -150,7 +149,6 @@ metadata {
 	// 		name: "param10", 
 	// 		type: "number", 
 	// 		range: "1..127", 
-	// 		required: true,
 	// 		title: "Auto Report Battery Time\n",
 	// 		description: "The interval time for auto report the battery level. 30 minutes per tick and minimum time is 30 minutes, default tick is 12 (6 hours).\n"+
 	// 			"Default value: 12"
@@ -160,7 +158,6 @@ metadata {
 	// 		name: "param12", 
 	// 		type: "number", 
 	// 		range: "1..127", 
-	// 		required: true,
 	// 		title: "Auto Report Illumination Time\n",
 	// 		description: "The interval time for auto report the illumination. 30 minutes per tick and minimum time is 30 minutes, default tick is 12 (6 hours).\n"+
 	// 			"Default value: 12"
@@ -170,25 +167,26 @@ metadata {
 	// 		name: "param13", 
 	// 		type: "number", 
 	// 		range: "1..127", 
-	// 		required: true,
 	// 		title: "Auto Report Temperature Time\n",
 	// 		description: "The interval time for auto report the temperature. 30 minutes per tick and minimum time is 30 minutes, default tick is 12 (6 hours).\n"+
 	// 			"Default value: 12"
 	// 	)
-	}
+	// }
 }
 
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	log.debug "installed() called"
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// 2 * 60 * 60 + 2 * 60
+	sendEvent(name: "checkInterval", value: wakeUpInterval(), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	configure()
 }
 
 def updated(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	log.debug "updated() called"
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// 2 * 60 * 60 + 2 * 60
+	sendEvent(name: "checkInterval", value: wakeUpInterval(), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	configure()
 }
 
@@ -294,6 +292,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
+def wakeUpInterval()
+{
+	return 1 * 3600
+}
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -327,7 +330,7 @@ def configure() {
 		// Auto Report Temperature Time
 		zwave.configurationV1.configurationSet(parameterNumber: 13, size: 1, scaledConfigurationValue: 12).format(), 
 		// Wake up every hour
-		zwave.wakeUpV2.wakeUpIntervalSet(seconds: 1 * 3600, nodeid:zwaveHubNodeId).format(),                        
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds: wakeUpInterval(), nodeid:zwaveHubNodeId).format(),                        
 
 	])
 }
