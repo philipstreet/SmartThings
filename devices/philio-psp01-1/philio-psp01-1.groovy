@@ -7,7 +7,7 @@
  *
  *  Version: 1.0.1
  *
- *  Source: 
+ *  Source: https://github.com/philipstreet/SmartThings/tree/master/devices/philio-psp01-1
  *
  *  Author: Philip Street (philipstreet)
  *
