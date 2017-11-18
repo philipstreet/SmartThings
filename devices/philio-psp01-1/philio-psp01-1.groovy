@@ -90,7 +90,7 @@ metadata {
 	 		range: "-1..100",
 	 		title: "Setting the BASIC command value to turn on the light.\n"+
             	"The 0xFF(-1) means turn on the light. For dimmer equipment 1 to 100 means the light strength.\n"+
-                "Default value: 255 (according to documentation, but valid range is 1-100)\n"+
+                "Default value: 255 (according to documentation, but valid range is -1 to 100)\n"+
 				"Suggested Value: -1")
 	 	
 	 	input (name: "param3", 
