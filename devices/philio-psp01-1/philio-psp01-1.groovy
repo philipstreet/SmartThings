@@ -260,12 +260,19 @@ def updated(){
 	logger("updated()","trace")
 
 	// Update internal state:
-	state.loggingLevelIDE     = (settings.configLoggingLevelIDE) ? settings.configLoggingLevelIDE.toInteger() : 3
-	state.loggingLevelDevice  = (settings.configLoggingLevelDevice) ? settings.configLoggingLevelDevice.toInteger(): 2
+	if (!state.updatedLastRanAt || now() >= state.updatedLastRanAt + 2000) {
+		state.updatedLastRanAt = now()
 
-	// 2 * 60 * 60 + 2 * 60
-	sendEvent(name: "checkInterval", value: wakeUpInterval(), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	configure()
+		state.loggingLevelIDE     = (settings.configLoggingLevelIDE) ? settings.configLoggingLevelIDE.toInteger() : 3
+		state.loggingLevelDevice  = (settings.configLoggingLevelDevice) ? settings.configLoggingLevelDevice.toInteger(): 2
+
+		sendEvent(name: "checkInterval", value: wakeUpInterval(), displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		configure()
+    }
+    else {
+        logger("updated(): Ran within last 2 seconds so aborting.","debug")
+    }
+
 }
 
 // Parse incoming device messages to generate events
@@ -286,22 +293,74 @@ def parse(String description)
 	} else {
         logger("parse(): Could not parse raw message: ${description}","error")
     }
-    // def statusTextmsg = "Status:"
-
-    // if (device.currentState('motion')) {
-    //     statusTextmsg += " motion is ${device.currentState('motion').value},"
-    // }
-    // if (device.currentState('temperature')) {
-    //     statusTextmsg += " temperature is ${device.currentState('temperature').value}°,"
-    // }
-    // if (device.currentState('illuminance')) {
-    //     statusTextmsg += " illuminance is ${device.currentState('illuminance').value} lux,"
-    // }
-    // // trim trailing comma:
-    // statusTextmsg = statusTextmsg.substring(0, statusTextmsg.length() - 1)
-    // log.debug statusTextmsg
 
 	return result
+}
+
+// Ping device
+def ping() {
+	logger("ping()","trace")
+	zwave.batteryV1.batteryGet()
+}
+
+// Configure devices settings
+def configure() {
+	logger("configure()","trace")
+	delayBetween([
+
+		// PIR Sensitivity 1-100
+		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: 70).format(), 
+		// Light Threshold
+		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: 99).format(), 
+		// Operation Mode
+		// 13 = 00001101
+		// Bit7 = 0 (Unknown)
+		// Bit6 = 0 (Unknown)
+		// Bit5 = 0 (Enable temp report) 
+		// Bit4 = 0 (Enable illumination report) 
+		// Bit3 = 1 (Celsius)
+		// Bit2 = 1 (Reserverd, always 1)
+		// Bit1 = 0 (disable test mode)
+		// Bit0 = 1 (security mode)
+		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 13).format(), 
+		// Multi-Sensor Function Switch
+		// 69 = 01000101
+		// Bit7 = 0 (Unknown)
+		// Bit6 = 1 (Enable temp monitoring)
+		// Bit5 = 0 (Reserved)
+		// Bit4 = 0 (Reserved)
+		// Bit3 = 0 (Reserved)
+		// Bit2 = 1 (Reserved, always 1)
+		// Bit1 = 0 (Enable PIR integrate illumination)
+		// Bit0 = 1 (Reserved, always 1)
+		zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1, scaledConfigurationValue: 69).format(), 
+		// Customer Function
+		// 22 = 00010110
+		// Bit7 = 0 (Unknown)
+		// Bit6 = 0 (Unknown)
+		// Bit5 = 0 (Unknown)
+		// Bit4 = 1 (Unknown)
+		// Bit3 = 0 (Unknown)
+		// Bit2 = 1 (Enable PIR super sensitivity mode)
+		// Bit1 = 0 (Unknown)
+		// Bit0 = 1 (Unknown)
+		zwave.configurationV1.configurationSet(parameterNumber: 7, size: 1, scaledConfigurationValue: 22).format(), 
+		// PIR Re-Detect Interval Time
+		zwave.configurationV1.configurationSet(parameterNumber: 8, size: 1, scaledConfigurationValue: 3).format(), 
+		// Turn Off Light Time
+		zwave.configurationV1.configurationSet(parameterNumber: 9, size: 1, scaledConfigurationValue: 4).format(), 
+		// Auto Report Battery Time
+		zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, scaledConfigurationValue: 12).format(), 
+        // Unknown
+        zwave.configurationV1.configurationSet(parameterNumber: 11, size: 1, scaledConfigurationValue: 12).format(),
+		// Auto Report Illumination Time
+		zwave.configurationV1.configurationSet(parameterNumber: 12, size: 1, scaledConfigurationValue: 12).format(), 
+		// Auto Report Temperature Time
+		zwave.configurationV1.configurationSet(parameterNumber: 13, size: 1, scaledConfigurationValue: 12).format(), 
+		// Wake up every hour
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds: wakeUpInterval(), nodeid:zwaveHubNodeId).format(),                        
+
+	])
 }
 
 /*****************************************************************************************************************
@@ -491,73 +550,6 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logger("zwaveEvent(): Command received: ${cmd}","trace")
 	[:]
-}
-
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
-def ping() {
-	logger("ping()","trace")
-	zwave.batteryV1.batteryGet()
-}
-
-def configure() {
-	logger("configure()","trace")
-	delayBetween([
-
-		// PIR Sensitivity 1-100
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: 70).format(), 
-		// Light Threshold
-		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: 99).format(), 
-		// Operation Mode
-		// 13 = 00001101
-		// Bit7 = 0 (Unknown)
-		// Bit6 = 0 (Unknown)
-		// Bit5 = 0 (Enable temp report) 
-		// Bit4 = 0 (Enable illumination report) 
-		// Bit3 = 1 (Celsius)
-		// Bit2 = 1 (Reserverd, a;ways 1)
-		// Bit1 = 0 (disable test mode)
-		// Bit0 = 1 (security mode)
-		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 13).format(), 
-		// Multi-Sensor Function Switch
-		// 69 = 01000101
-		// Bit7 = 0 (Unknown)
-		// Bit6 = 1 (Enable temp monitoring)
-		// Bit5 = 0 (Reserved)
-		// Bit4 = 0 (Reserved)
-		// Bit3 = 0 (Reserved)
-		// Bit2 = 1 (Reserved, always 1)
-		// Bit1 = 0 (Enable PIR integrate illumination)
-		// Bit0 = 1 (Reserved, always 1)
-		zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1, scaledConfigurationValue: 69).format(), 
-		// Customer Function
-		// 22 = 00010110
-		// Bit7 = 0 (Unknown)
-		// Bit6 = 0 (Unknown)
-		// Bit5 = 0 (Unknown)
-		// Bit4 = 1 (Unknown)
-		// Bit3 = 0 (Unknown)
-		// Bit2 = 1 (Enable PIR super sensitivity mode)
-		// Bit1 = 0 (Unknown)
-		// Bit0 = 1 (Unknown)
-		zwave.configurationV1.configurationSet(parameterNumber: 7, size: 1, scaledConfigurationValue: 22).format(), 
-		// PIR Re-Detect Interval Time
-		zwave.configurationV1.configurationSet(parameterNumber: 8, size: 1, scaledConfigurationValue: 3).format(), 
-		// Turn Off Light Time
-		zwave.configurationV1.configurationSet(parameterNumber: 9, size: 1, scaledConfigurationValue: 4).format(), 
-		// Auto Report Battery Time
-		zwave.configurationV1.configurationSet(parameterNumber: 10, size: 1, scaledConfigurationValue: 12).format(), 
-        // Unknown
-        zwave.configurationV1.configurationSet(parameterNumber: 11, size: 1, scaledConfigurationValue: 12).format(),
-		// Auto Report Illumination Time
-		zwave.configurationV1.configurationSet(parameterNumber: 12, size: 1, scaledConfigurationValue: 12).format(), 
-		// Auto Report Temperature Time
-		zwave.configurationV1.configurationSet(parameterNumber: 13, size: 1, scaledConfigurationValue: 12).format(), 
-		// Wake up every hour
-		zwave.wakeUpV2.wakeUpIntervalSet(seconds: wakeUpInterval(), nodeid:zwaveHubNodeId).format(),                        
-
-	])
 }
 
 /*****************************************************************************************************************
