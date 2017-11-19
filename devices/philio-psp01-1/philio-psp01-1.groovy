@@ -175,7 +175,7 @@ metadata {
 	 		title: "PIR Re-Detect Interval Time\n"+
                 "In the security mode, after the PIR motion detected, setting the re-detect time. 8 seconds per tick, and minimum time is 24 seconds, default tick is 3 (24 seconds).\n"+
 	 			"Setting the suitable value to prevent received the trigger signal too frequency. Also can save the battery energy.\n"+
-	 			"Notice: If this value bigger than the configuration setting NO. 9. There is a period after the light turned off and the PIR not detecting.\n"+
+	 			"Notice: If this value is bigger than the \"Turn Off Light Time\" configuration setting. There is a period after the light turned off and the PIR not detecting.\n"+
 	 			"Default value: 3")
 
 	 	input (name: "param9", 
